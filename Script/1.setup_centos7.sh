@@ -38,7 +38,7 @@ echo "cephuser ALL = (root) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/cephuser
 chmod 0440 /etc/sudoers.d/cephuser
 
 # Install Ceph and EPEL repository
-sudo rpm -Uvh https://download.ceph.com/rpm-nautilus/el7/noarch/ceph-release-1-0.el7.noarch.rpm
+sudo rpm -Uvh https://download.ceph.com/rpm-nautilus/el7/noarch/ceph-release-1-1.el7.noarch.rpm
 
 yum update -y
 
