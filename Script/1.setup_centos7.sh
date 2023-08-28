@@ -18,20 +18,6 @@ sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
 
 # Create an alias for vi to vim
 echo "alias vi=vim" >> ~/.bashrc
-#!/bin/bash
-
-# Update system
-yum update -y
-
-# Install basic packages
-yum install net-tools wget vim epel-release -y
-
-# Stop and disable firewalld
-systemctl stop firewalld
-systemctl disable firewalld
-
-# Disable SELinux
-sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/sysconfig/selinux
 
 # Set hostname
 hostnamectl set-hostname ceph1
@@ -52,11 +38,36 @@ echo "cephuser ALL = (root) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/cephuser
 chmod 0440 /etc/sudoers.d/cephuser
 
 # Install Ceph and EPEL repository
-sudo rpm -Uvh https://download.ceph.com/rpm-nautilus/el7/noarch/ceph-release-1-0.el7.noarch.rpm
-sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+cat <<EOF> /etc/yum.repos.d/ceph.repo
+[ceph]
+name=Ceph packages for \$basearch
+baseurl=https://download.ceph.com/rpm-nautilus/el7/x86_64/
+enabled=1
+priority=2
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+
+[ceph-noarch]
+name=Ceph noarch packages
+baseurl=https://download.ceph.com/rpm-nautilus/el7/noarch
+enabled=1
+priority=2
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+
+[ceph-source]
+name=Ceph source packages
+baseurl=https://download.ceph.com/rpm-nautilus/el7/SRPMS
+enabled=0
+priority=2
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+EOF
+
+yum update -y
 
 # Install additional packages
-yum install wget byobu curl git python-setuptools python-virtualenv -y
+yum install byobu curl git python-setuptools python-virtualenv -y
 
 echo "Setup completed."
 
