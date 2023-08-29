@@ -6,11 +6,17 @@ sudo yum install -y ceph-deploy
 # Switch to cephuser
 su - cephuser
 
-# Generate SSH key and copy to nodes
-ssh-keygen
-ssh-copy-id cephuser@ceph1
-ssh-copy-id cephuser@ceph2
-ssh-copy-id cephuser@ceph3
+# Generate SSH key
+ssh-keygen -t rsa
+
+# Copy SSH key to nodes
+function copy_ssh_key {
+    ssh-copy-id cephuser@$1
+}
+
+copy_ssh_key ceph1
+copy_ssh_key ceph2
+copy_ssh_key ceph3
 
 # Create cluster directory
 cd ~
