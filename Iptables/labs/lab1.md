@@ -12,7 +12,7 @@
 
 |server|IP|
 |------|--|
-|Server Centso 7|ens33 IP: 192.168.114.129
+|Server CentOS 7|ens33 IP: 192.168.114.129
 ||Gateway: 192.168.114.130|
 |Firewall-iptables|ens33 IP: 192.168.114.130
 ||ens34 IP: 192.168.146.214
