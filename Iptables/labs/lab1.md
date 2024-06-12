@@ -42,7 +42,9 @@ service iptables restart
 <div style="text-align: center;">
     <img src="https://imgur.com/AmCW5bf.jpg">
 </div>
+
 - Logs trả về trên iptables
+
 <div style="text-align: center;">
     <img src="https://imgur.com/uNeWLWq.jpg">
 </div>
@@ -52,3 +54,5 @@ Kết quả gồm các thông tin như:
 - MAC=00:0c:29:e7:90:31:00:0c:29:47:b3:5c:08:00: Địa chỉ MAC của các thiết bị liên quan.
 - SRC=192.168.114.129: Địa chỉ IP nguồn (máy ảo test2).
 - DST=172.217.27.14: Địa chỉ IP đích (một máy chủ của Google).
+
+## Cấu hình DNAT
