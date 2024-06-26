@@ -1,58 +1,101 @@
-# Cấu hình SNAT và DNAT trên IPTABLES
-## Cấu hình SNAT
-### 1. Mô hình
+# Lab mô phỏng SNAT, DNAT trên Centos 7
 
-<div style="text-align: center;">
-    <img src="https://imgur.com/v67wAYx.jpg">
-</div>
+- server **test01** (SNAT): IP là 192.168.80.134
+- server **test02** (DNAT): IP là 192.168.80.133
 
- **Yêu cầu**
--  Server trong LAN iptables có thể đi interner (ping được đến google.com)
-- Sơ đồ IP 
-<div style="text-align: center;">
-    <img src="https://imgur.com/MuFVCMl.jpg">
-</div>
+### Cấu hình SNAT trên server test01 (192.168.80.134)
 
-### 2. Cấu hình triển khai
-- Thực hiện cấu hình NAT để server trong mạng LAN có thể kết nối ra ngoài internet
-- Bật tính năng định tuyến cho firewall
-```sh
-echo '1' > /proc/sys/net/ipv4/ip_forward
-```
-Hoặc thêm trong ***/etc/sysctl.conf***
-```sh
-net.ipv4.ip_forward = 1
-sysctl -p
-```
-- Để Server có thể ping ra ngoài internet thì firewall cần dùng SNAT và đặt rule ở chain **POSTROUTING** với **MASQUERADE**. **MASQUERADE** thường dùng cho các kết nối internet thông qua ppo hoặc ip động
-```sh
-iptables -t nat -A POSTROUTING -o ens34 -j MASQUERADE
-# Hoặc 
-iptables -t nat -A POSTROUTING -o ens34 -j SNAT --to-source 192.168.146.214
-# Ghi log gói tin icmp đi qua khi ping 
-iptables -A FORWARD -p icmp -j LOG --log-prefix "ICMP Packet: " --log-level 4
-```
-- Lưu config và restart lại iptables
-```sh
-service iptables save
-service iptables restart
-```
-**Kết quả**
-- Trên Server CentOS 7
-<div style="text-align: center;">
-    <img src="https://imgur.com/AmCW5bf.jpg">
-</div>
+SNAT được sử dụng để thay đổi địa chỉ IP nguồn của gói tin khi nó rời khỏi mạng nội bộ.
 
-- Logs trả về trên iptables
+1. **Kích hoạt tính năng chuyển tiếp IP trên server test01**:
+   ```sh
+   echo 1 > /proc/sys/net/ipv4/ip_forward
+   ```
 
-<div style="text-align: center;">
-    <img src="https://imgur.com/uNeWLWq.jpg">
-</div>
+   Để cấu hình vĩnh viễn:
+   ```sh
+   echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+   sysctl -p
+   ```
 
-Kết quả gồm các thông tin như:
-- IN=ens33 OUT=ens34: Gói tin đi vào qua ens33 và đi ra qua ens34.
-- MAC=00:0c:29:e7:90:31:00:0c:29:47:b3:5c:08:00: Địa chỉ MAC của các thiết bị liên quan.
-- SRC=192.168.114.129: Địa chỉ IP nguồn (máy ảo test2).
-- DST=172.217.27.14: Địa chỉ IP đích (một máy chủ của Google).
+2. **Cấu hình iptables để thực hiện SNAT**:
+   Giả sử server test01 sẽ thay đổi địa chỉ IP nguồn của gói tin từ mạng nội bộ thành IP công cộng của nó (nếu có). Nếu bạn chỉ muốn thay đổi thành IP của server test01 thì làm như sau:
+   ```sh
+   iptables -t nat -A POSTROUTING -s 10.3.2.0/24 -o ens33 -j SNAT --to-source 192.168.80.134
+   ```
 
-## Cấu hình DNAT
+3. **Lưu cấu hình iptables**:
+   ```sh
+   service iptables save
+   ```
+
+4. **Khởi động lại dịch vụ iptables**:
+   ```sh
+   systemctl restart iptables
+   ```
+
+### Cấu hình DNAT trên máy chủ B (192.168.80.133)
+
+DNAT được sử dụng để thay đổi địa chỉ IP đích của gói tin khi nó vào mạng nội bộ từ bên ngoài.
+
+1. **Kích hoạt tính năng chuyển tiếp IP trên máy chủ B**:
+   ```sh
+   echo 1 > /proc/sys/net/ipv4/ip_forward
+   ```
+
+   Để cấu hình vĩnh viễn:
+   ```sh
+   echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+   sysctl -p
+   ```
+
+2. **Cấu hình iptables để thực hiện DNAT**:
+   Giả sử máy chủ B sẽ chuyển tiếp gói tin đến IP nội bộ khác (ví dụ: 10.3.2.194) khi nhận gói tin từ một địa chỉ IP công cộng.
+
+   ```sh
+   iptables -t nat -A PREROUTING -d 192.168.80.133 -p tcp --dport 80 -j DNAT --to-destination 10.3.2.194:80
+   ```
+
+   Bạn có thể thay đổi địa chỉ IP và cổng tùy theo yêu cầu của bạn.
+
+3. **Lưu cấu hình iptables**:
+   ```sh
+   service iptables save
+   ```
+
+4. **Khởi động lại dịch vụ iptables**:
+   ```sh
+   systemctl restart iptables
+   ```
+
+### Kiểm tra cấu hình
+
+Để kiểm tra xem cấu hình SNAT và DNAT đã hoạt động chưa, bạn có thể thực hiện các bước sau:
+
+1. **Trên server test01 (SNAT)**, kiểm tra xem các gói tin từ mạng nội bộ có được thay đổi địa chỉ IP nguồn thành IP của server test01 hay không. Bạn có thể sử dụng `tcpdump` để theo dõi các gói tin:
+   ```sh
+   tcpdump -i eth0
+   ```
+
+2. **Trên máy chủ B (DNAT)**, kiểm tra xem các gói tin đến IP của máy chủ B có được chuyển tiếp đến địa chỉ IP đích đã cấu hình hay không. Bạn có thể sử dụng `tcpdump` để theo dõi các gói tin:
+   ```sh
+   tcpdump -i eth0
+   ```
+
+3. **Kiểm tra `conntrack`** để theo dõi các kết nối và NAT:
+   ```sh
+   conntrack -L
+   ```
+
+4. **Dùng `curl` hoặc `wget` để gửi yêu cầu đến máy chủ B và kiểm tra xem nó có được chuyển tiếp đúng hay không**:
+   ```sh
+   curl http://192.168.80.133
+   ```
+
+5. **Sử dụng công cụ `ping` hoặc `traceroute`** từ một máy ngoài mạng để kiểm tra đường đi của gói tin:
+   ```sh
+   ping 192.168.80.133
+   traceroute 192.168.80.133
+   ```
+
+Với các bước trên, bạn sẽ có thể cấu hình và kiểm tra hoạt động của SNAT và DNAT trên hai máy chủ CentOS 7 với các địa chỉ IP được cung cấp.
