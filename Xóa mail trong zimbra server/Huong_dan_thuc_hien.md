@@ -17,7 +17,8 @@ sh /opt/zimbra/delete_mail.sh
 
 **Kết quả**
 
-<img src="./images/Screenshot_3.png">
+![Xóa mail](./images/Screenshot_5.png)
+
 
 - Khi chạy, script sẽ bắt nhập thông tin về mail muốn xóa
 -> nhập thông tin mail cần xóa vào
